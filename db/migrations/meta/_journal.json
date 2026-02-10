@@ -15,6 +15,20 @@
       "when": 1770720306082,
       "tag": "0001_add_better_auth_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770723371445,
+      "tag": "0002_auth_verification_jsonb_timestamptz",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770728144135,
+      "tag": "0003_verification_value_text",
+      "breakpoints": true
     }
   ]
 }

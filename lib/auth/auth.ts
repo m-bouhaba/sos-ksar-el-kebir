@@ -16,15 +16,21 @@ import { db } from '@/db';
 import { users, session, account, verification } from '@/db/schema';
 import { UserRole } from '@/types';
 
-/** Schema map: Better Auth expects model names "user" | "session" | "account" | "verification" */
+/**
+ * Schema map for Drizzle adapter.
+ * Core uses "user" internally; with user.modelName: "users" the factory passes "users" to the adapter.
+ * So we provide both keys to avoid "The model 'users' was not found" (e.g. OAuth callback).
+ */
 const authSchema = {
   user: users,
+  users,
   session,
   account,
   verification,
 } as const;
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL ?? process.env.VERCEL_URL ?? 'http://localhost:3000',
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: authSchema,

@@ -19,19 +19,21 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
-// Better Auth: session table (cookie-based sessions)
+// Better Auth: session table (cookie-based sessions). Timestamps with timezone for Neon.
+const tsTz = (name: string) => timestamp(name, { withTimezone: true });
+
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
   token: text('token').notNull().unique(),
-  expiresAt: timestamp('expires_at').notNull(),
+  expiresAt: tsTz('expires_at').notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: tsTz('created_at').notNull().defaultNow(),
+  updatedAt: tsTz('updated_at').notNull().defaultNow(),
 });
 
-// Better Auth: account table (OAuth / credential links)
+// Better Auth: account table (OAuth / credential links). Timestamps with timezone for Neon.
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
@@ -39,23 +41,23 @@ export const account = pgTable('account', {
   providerId: text('provider_id').notNull(),
   accessToken: text('access_token'),
   refreshToken: text('refresh_token'),
-  accessTokenExpiresAt: timestamp('access_token_expires_at'),
-  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  accessTokenExpiresAt: tsTz('access_token_expires_at'),
+  refreshTokenExpiresAt: tsTz('refresh_token_expires_at'),
   scope: text('scope'),
   idToken: text('id_token'),
   password: text('password'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: tsTz('created_at').notNull().defaultNow(),
+  updatedAt: tsTz('updated_at').notNull().defaultNow(),
 });
 
-// Better Auth: verification table (e.g. email verification)
+// Better Auth: verification table (OAuth state, email verification). value must be text so JSON.parse(data.value) works in callback.
 export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  expiresAt: tsTz('expires_at').notNull(),
+  createdAt: tsTz('created_at').notNull().defaultNow(),
+  updatedAt: tsTz('updated_at').notNull().defaultNow(),
 });
 
 // Reports table
