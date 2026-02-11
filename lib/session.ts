@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { logoutAction } from '@/actions/auth/logout';
+import type { SessionResult } from '@/lib/auth/session';
 
 export interface User {
   id: number;
@@ -18,11 +20,34 @@ export interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+function sessionResultToUser(session: SessionResult): User {
+  const id = Number(session.user.id);
+  return {
+    id: Number.isNaN(id) ? 0 : id,
+    email: session.user.email,
+    name: session.user.email.split('@')[0] || 'User',
+    role: session.user.role as 'citizen' | 'volunteer' | 'admin',
+  };
+}
+
+export function SessionProvider({
+  children,
+  initialSession = null,
+}: {
+  children: ReactNode;
+  /** Pass server session from getServerSession() so dashboard and useSession() see the logged-in user (Better Auth cookie session). */
+  initialSession?: SessionResult | null;
+}) {
+  const [user, setUser] = useState<User | null>(() =>
+    initialSession ? sessionResultToUser(initialSession) : null
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (initialSession) {
+      setUser(sessionResultToUser(initialSession));
+      return;
+    }
     const savedUser = localStorage.getItem('sos-user');
     if (savedUser) {
       try {
@@ -32,28 +57,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('sos-user');
       }
     }
-  }, []);
+  }, [initialSession]);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (email && password.length >= 4) {
-        const mockUser: User = {
-          id: Math.floor(Math.random() * 1000),
+      const { loginWithCredentialsAction } = await import('@/actions/auth/loginWithCredentials');
+      const result = await loginWithCredentialsAction(email, password);
+      if (result.success) {
+        setUser({
+          id: 0,
           email,
           name: email.split('@')[0],
-          role: 'citizen'
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem('sos-user', JSON.stringify(mockUser));
-        setIsLoading(false);
+          role: 'citizen',
+        });
+        window.location.href = '/';
         return true;
       }
-      
       setIsLoading(false);
       return false;
     } catch (error) {
@@ -66,6 +86,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('sos-user');
+    logoutAction();
   };
 
   const contextValue: SessionContextType = {
