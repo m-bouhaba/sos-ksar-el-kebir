@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,75 +20,8 @@ import {
   Activity
 } from 'lucide-react';
 import { ReportType, ReportStatus } from '@/types';
-
-// Données mockées pour les rapports
-const mockReports = [
-  {
-    id: 1,
-    type: ReportType.MEDICAL,
-    status: ReportStatus.PENDING,
-    location: 'Rue Hassan II, Ksar El Kebir',
-    description: 'Personne âgée tombée, besoin d\'assistance médicale urgente',
-    createdAt: '2024-01-09T10:30:00Z'
-  },
-  {
-    id: 2,
-    type: ReportType.FIRE,
-    status: ReportStatus.IN_PROGRESS,
-    location: 'Avenue Mohammed V, Ksar El Kebir',
-    description: 'Début d\'incendie dans un immeuble résidentiel',
-    createdAt: '2024-01-09T09:15:00Z'
-  },
-  {
-    id: 3,
-    type: ReportType.ACCIDENT,
-    status: ReportStatus.RESOLVED,
-    location: 'Boulevard Zerktouni, Ksar El Kebir',
-    description: 'Accident de voiture, blessés légers',
-    createdAt: '2024-01-09T08:45:00Z'
-  }
-];
-
-const getStatusColor = (status: ReportStatus) => {
-  switch (status) {
-    case ReportStatus.PENDING:
-      return 'bg-orange-100 text-orange-800 border-orange-200';
-    case ReportStatus.IN_PROGRESS:
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case ReportStatus.RESOLVED:
-      return 'bg-green-100 text-green-800 border-green-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
-};
-
-const getStatusIcon = (status: ReportStatus) => {
-  switch (status) {
-    case ReportStatus.PENDING:
-      return <Clock className="w-4 h-4" />;
-    case ReportStatus.IN_PROGRESS:
-      return <Activity className="w-4 h-4" />;
-    case ReportStatus.RESOLVED:
-      return <CheckCircle className="w-4 h-4" />;
-    default:
-      return <Clock className="w-4 h-4" />;
-  }
-};
-
-const getTypeColor = (type: ReportType) => {
-  switch (type) {
-    case ReportType.MEDICAL:
-      return 'bg-red-100 text-red-800';
-    case ReportType.FIRE:
-      return 'bg-orange-100 text-orange-800';
-    case ReportType.ACCIDENT:
-      return 'bg-yellow-100 text-yellow-800';
-    case ReportType.CRIME:
-      return 'bg-purple-100 text-purple-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
+import { useSession } from '@/lib/session';
+import { createReportAction, getUserReportsAction } from '@/actions/reports';
 
 export default function CitizenDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,18 +30,119 @@ export default function CitizenDashboard() {
     location: '',
     description: ''
   });
+  const [reports, setReports] = useState<any[]>([]);
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  
+  const { user, logout } = useSession();
+
+  // Charger les rapports de l'utilisateur
+  useEffect(() => {
+    if (user) {
+      loadUserReports();
+    }
+  }, [user]);
+
+  const loadUserReports = async () => {
+    try {
+      const result = await getUserReportsAction(user.id);
+      if (result.success && result.data) {
+        setReports(result.data);
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des rapports:', err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulation d'envoi de rapport
-    setTimeout(() => {
+    setMessage('');
+    setError('');
+
+    try {
+      if (!user) {
+        setError('Utilisateur non connecté');
+        return;
+      }
+
+      const result = await createReportAction({
+        type: formData.type,
+        location: formData.location,
+        description: formData.description,
+        userId: user.id
+      });
+
+      if (result.success) {
+        setMessage('Signalement envoyé avec succès!');
+        setFormData({ type: ReportType.OTHER, location: '', description: '' });
+        // Recharger les rapports
+        await loadUserReports();
+      } else {
+        setError(result.error || 'Erreur lors de l\'envoi du signalement');
+      }
+    } catch (err) {
+      setError('Erreur technique. Veuillez réessayer.');
+    } finally {
       setIsSubmitting(false);
-      setFormData({ type: ReportType.OTHER, location: '', description: '' });
-      // Ici, la logique d'envoi sera implémentée plus tard
-    }, 2000);
+    }
   };
+
+  const getStatusColor = (status: ReportStatus) => {
+    switch (status) {
+      case ReportStatus.PENDING:
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case ReportStatus.IN_PROGRESS:
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case ReportStatus.RESOLVED:
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: ReportStatus) => {
+    switch (status) {
+      case ReportStatus.PENDING:
+        return <Clock className="w-4 h-4" />;
+      case ReportStatus.IN_PROGRESS:
+        return <Activity className="w-4 h-4" />;
+      case ReportStatus.RESOLVED:
+        return <CheckCircle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: ReportType) => {
+    switch (type) {
+      case ReportType.MEDICAL:
+        return 'bg-red-100 text-red-800';
+      case ReportType.FIRE:
+        return 'bg-orange-100 text-orange-800';
+      case ReportType.ACCIDENT:
+        return 'bg-yellow-100 text-yellow-800';
+      case ReportType.CRIME:
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-600">Veuillez vous connecter pour accéder à cette page.</p>
+            <Button onClick={() => window.location.href = '/auth'} className="mt-4">
+              Se connecter
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,8 +171,11 @@ export default function CitizenDashboard() {
                     <User className="w-4 h-4" />
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">Citoyen</span>
+                <span className="text-sm font-medium">{user.name}</span>
               </div>
+              <Button variant="outline" size="sm" onClick={logout}>
+                Déconnexion
+              </Button>
             </div>
           </div>
         </div>
@@ -205,6 +242,24 @@ export default function CitizenDashboard() {
                     />
                   </div>
 
+                  {message && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm text-green-800">{message}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        <span className="text-sm text-red-800">{error}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <Button 
                     type="submit" 
                     className="w-full bg-red-600 hover:bg-red-700"
@@ -246,58 +301,58 @@ export default function CitizenDashboard() {
               
               <CardContent>
                 <div className="space-y-4">
-                  {mockReports.map((report) => (
-                    <Card key={report.id} className="border-l-4 border-l-red-500">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <Badge className={getTypeColor(report.type)}>
-                              {report.type}
-                            </Badge>
-                            <Badge className={getStatusColor(report.status)} variant="outline">
-                              <div className="flex items-center gap-1">
-                                {getStatusIcon(report.status)}
-                                {report.status === 'pending' && 'En attente'}
-                                {report.status === 'in_progress' && 'En cours'}
-                                {report.status === 'resolved' && 'Résolu'}
-                              </div>
-                            </Badge>
+                  {reports.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p>Vous n'avez pas encore de signalements</p>
+                      <p className="text-sm">Utilisez le formulaire pour signaler une urgence</p>
+                    </div>
+                  ) : (
+                    reports.map((report) => (
+                      <Card key={report.id} className="border-l-4 border-l-red-500">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center space-x-3">
+                              <Badge className={getTypeColor(report.type)}>
+                                {report.type}
+                              </Badge>
+                              <Badge className={getStatusColor(report.status)} variant="outline">
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(report.status)}
+                                  <span>
+                                    {report.status === 'pending' && 'En attente'}
+                                    {report.status === 'in_progress' && 'En cours'}
+                                    {report.status === 'resolved' && 'Résolu'}
+                                  </span>
+                                </div>
+                              </Badge>
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              {new Date(report.createdAt).toLocaleString('fr-FR')}
+                            </span>
                           </div>
-                          <span className="text-sm text-gray-500">
-                            {new Date(report.createdAt).toLocaleString('fr-FR')}
-                          </span>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {report.location}
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm text-gray-600">
+                              <MapPin className="w-4 h-4 mr-1" />
+                              {report.location}
+                            </div>
+                            <p className="text-gray-800">{report.description}</p>
                           </div>
-                          <p className="text-gray-800">
-                            {report.description}
-                          </p>
-                        </div>
 
-                        {report.status === ReportStatus.IN_PROGRESS && (
-                          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
-                            <p className="text-sm text-blue-800">
-                              <Activity className="w-4 h-4 inline mr-1" />
-                              Une équipe est en route vers votre position
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          {report.status === ReportStatus.IN_PROGRESS && (
+                            <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                              <p className="text-sm text-blue-800">
+                                <Activity className="w-4 h-4 inline mr-1" />
+                                Une équipe est en route vers votre position
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
-
-                {mockReports.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>Vous n'avez pas encore de signalements</p>
-                    <p className="text-sm">Utilisez le formulaire pour signaler une urgence</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
