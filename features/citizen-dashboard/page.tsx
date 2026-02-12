@@ -8,11 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { 
-  AlertTriangle, 
-  Send, 
-  Clock, 
-  CheckCircle, 
+import {
+  AlertTriangle,
+  Send,
+  Clock,
+  CheckCircle,
   User,
   MapPin,
   Phone,
@@ -33,7 +33,7 @@ export default function CitizenDashboard() {
   const [reports, setReports] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  
+
   const { user, logout } = useSession();
 
   // Charger les rapports de l'utilisateur
@@ -159,7 +159,7 @@ export default function CitizenDashboard() {
                 Citoyen
               </Badge>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
                 <Phone className="w-4 h-4 mr-2" />
@@ -195,7 +195,7 @@ export default function CitizenDashboard() {
                   Décrivez votre situation pour obtenir une assistance rapide
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
@@ -260,8 +260,8 @@ export default function CitizenDashboard() {
                     </div>
                   )}
 
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full bg-red-600 hover:bg-red-700"
                     disabled={isSubmitting}
                   >
@@ -298,7 +298,7 @@ export default function CitizenDashboard() {
                   Suivez l'état de vos rapports d'urgence
                 </CardDescription>
               </CardHeader>
-              
+
               <CardContent>
                 <div className="space-y-4">
                   {reports.length === 0 ? (
@@ -331,7 +331,7 @@ export default function CitizenDashboard() {
                               {new Date(report.createdAt).toLocaleString('fr-FR')}
                             </span>
                           </div>
-                          
+
                           <div className="space-y-2">
                             <div className="flex items-center text-sm text-gray-600">
                               <MapPin className="w-4 h-4 mr-1" />
