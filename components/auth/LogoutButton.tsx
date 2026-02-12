@@ -12,6 +12,7 @@ type LogoutButtonProps = {
 };
 
 /**
+ * USER STORY 5.2 — Logout Component
  * Reusable logout button. Only render when user session exists (e.g. from layout/navbar).
  * Calls Better Auth sign-out, clears session cookie, then redirects to home.
  */
