@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/auth/session';
 import { AuthCard } from './AuthCard';
 
 /**
+ * USER STORY 5.1 — Login Page
  * Auth page: render UI immediately. Redirect to home only when session is valid.
  * Session check: session?.user?.id != null
  */

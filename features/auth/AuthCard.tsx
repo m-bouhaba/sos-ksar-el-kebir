@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import { loginWithGoogleAction } from '@/actions/auth/loginWithGoogle';
 import { loginWithCredentialsAction } from '@/actions/auth/loginWithCredentials';
 import { registerUserAction } from '@/actions/auth/registerUser';
+import { UserRole } from '@/types';
+import { User, Heart } from 'lucide-react';
 
 export function AuthCard() {
   const router = useRouter();
@@ -23,6 +25,7 @@ export function AuthCard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [role, setRole] = useState<string>(UserRole.CITIZEN);
   const [error, setError] = useState<string | null>(null);
   const [loginPending, startLoginTransition] = useTransition();
   const [signupPending, startSignupTransition] = useTransition();
@@ -64,10 +67,11 @@ export function AuthCard() {
         const result = await registerUserAction(
           name.trim() || email.trim().split('@')[0] || 'User',
           email,
-          password
+          password,
+          role
         );
         if (result.success) {
-          router.push('/');
+          router.push(result.url); // Redirect to dashboard based on role
         } else {
           setError(result.error);
         }
@@ -84,9 +88,13 @@ export function AuthCard() {
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Sign in</CardTitle>
+        <CardTitle className="text-2xl text-center">
+          {isLoginMode ? 'Sign in' : 'Create Account'}
+        </CardTitle>
         <CardDescription className="text-center">
-          Use Google or your email to continue
+          {isLoginMode
+            ? 'Use Google or your email to continue'
+            : 'Join the community as a Citizen or Volunteer'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -104,7 +112,7 @@ export function AuthCard() {
             'Connecting…'
           ) : (
             <>
-              <svg className="size-5" viewBox="0 0 24 24" aria-hidden>
+              <svg className="size-5 mr-2" viewBox="0 0 24 24" aria-hidden>
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -149,19 +157,47 @@ export function AuthCard() {
           )}
 
           {!isLoginMode && (
-            <div className="space-y-2">
-              <Label htmlFor="auth-name">Name</Label>
-              <Input
-                id="auth-name"
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="name"
-                disabled={loginPending || signupPending}
-                className="w-full"
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="auth-name">Name</Label>
+                <Input
+                  id="auth-name"
+                  type="text"
+                  placeholder="Your name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
+                  disabled={loginPending || signupPending}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>I am a:</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    onClick={() => setRole(UserRole.CITIZEN)}
+                    className={`cursor-pointer border rounded-lg p-3 flex flex-col items-center justify-center gap-2 transition-all ${role === UserRole.CITIZEN
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 ring-2 ring-blue-600 ring-offset-1'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="font-medium text-sm">Citizen</span>
+                  </div>
+                  <div
+                    onClick={() => setRole(UserRole.VOLUNTEER)}
+                    className={`cursor-pointer border rounded-lg p-3 flex flex-col items-center justify-center gap-2 transition-all ${role === UserRole.VOLUNTEER
+                        ? 'border-green-600 bg-green-50 text-green-700 ring-2 ring-green-600 ring-offset-1'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    <Heart className="w-5 h-5" />
+                    <span className="font-medium text-sm">Volunteer</span>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           <div className="space-y-2">
@@ -208,7 +244,7 @@ export function AuthCard() {
                 : 'Creating account…'
               : isLoginMode
                 ? 'Login'
-                : 'Create account'}
+                : 'Create Account'}
           </Button>
         </form>
       </CardContent>
