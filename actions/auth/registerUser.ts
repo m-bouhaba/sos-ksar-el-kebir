@@ -3,33 +3,45 @@
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
+// ... (imports remain)
+import { UserRole } from '@/types';
+
 export type RegisterUserResult =
-  | { success: true }
+  | { success: true; url: string }
   | { success: false; error: string };
 
 /**
- * Creates a new user with email and password using Better Auth.
- * User gets default role (citizen). Session cookie is set; client should redirect to "/" on success.
+ * Creates a new user with email, password, and role.
+ * Redirects to the appropriate dashboard based on the selected role.
  */
 export async function registerUserAction(
   name: string,
   email: string,
-  password: string
+  password: string,
+  role: string
 ): Promise<RegisterUserResult> {
   try {
     const requestHeaders = await headers();
+
+    // Validate role
+    if (role !== UserRole.CITIZEN && role !== UserRole.VOLUNTEER) {
+      return { success: false, error: 'Invalid role selected.' };
+    }
+
+    const callbackURL = role === UserRole.VOLUNTEER ? '/dashboard/volunteer' : '/dashboard/citizen';
 
     await auth.api.signUpEmail({
       body: {
         name: name.trim() || email.trim().split('@')[0] || 'User',
         email: email.trim(),
         password,
-        callbackURL: '/',
+        role,
+        callbackURL,
       },
       headers: requestHeaders,
     });
 
-    return { success: true };
+    return { success: true, url: callbackURL };
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'An error occurred during sign-up.';

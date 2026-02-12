@@ -43,7 +43,7 @@ export const auth = betterAuth({
   advanced: {
     database: {
       generateId: (options) => {
-        if (options.model === 'user') return undefined; // let PostgreSQL serial generate
+        if (options.model === 'user') return false as const; // let PostgreSQL serial generate
         return crypto.randomUUID();
       },
     },
@@ -57,7 +57,7 @@ export const auth = betterAuth({
         type: 'string',
         required: false,
         defaultValue: UserRole.CITIZEN,
-        input: false,
+        input: true,
       },
     },
   },
